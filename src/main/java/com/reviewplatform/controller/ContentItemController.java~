@@ -1,0 +1,55 @@
+package com.reviewplatform.controller;
+
+import com.reviewplatform.dto.ContentItemRequest;
+import com.reviewplatform.dto.ContentItemResponse;
+import com.reviewplatform.dto.ContentItemSearchRequest;
+import com.reviewplatform.mapper.ContentItemMapper;
+import com.reviewplatform.model.ContentItem;
+import com.reviewplatform.service.ContentItemService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.net.URI;
+
+@RestController
+@RequestMapping("/api/content-items")
+@RequiredArgsConstructor
+public class ContentItemController {
+
+    private final ContentItemService contentItemService;
+    private final ContentItemMapper contentItemMapper;
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ContentItemResponse> getContentItem(@PathVariable Long id) {
+        return ResponseEntity.ok(contentItemMapper.toResponse(
+                contentItemService.getContentItemById(id)));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<ContentItemResponse>> searchContentItems(
+            @ModelAttribute ContentItemSearchRequest searchRequest,
+            Pageable pageable) {
+        return ResponseEntity.ok(contentItemService.searchContentItems(
+                searchRequest, pageable).map(contentItemMapper::toResponse));
+    }
+
+    @PostMapping
+    public ResponseEntity<ContentItemResponse> createContentItem(
+            @Valid @RequestBody ContentItemRequest request) {
+        ContentItem item = contentItemService.createContentItem(request);
+        return ResponseEntity
+                .created(URI.create("/api/content-items/" + item.getId()))
+                .body(contentItemMapper.toResponse(item));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ContentItemResponse> updateContentItem(
+            @PathVariable Long id,
+            @Valid @RequestBody ContentItemRequest request) {
+        ContentItem item = contentItemService.updateContentItem(id, request);
+        return ResponseEntity.ok(contentItemMapper.toResponse(item));
+    }
+}

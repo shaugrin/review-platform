@@ -1,0 +1,83 @@
+// CategoryService.java
+package com.reviewplatform.service;
+
+import com.reviewplatform.dto.CategoryDto;
+import com.reviewplatform.dto.CategoryRequest;
+import com.reviewplatform.exception.ResourceAlreadyExistsException;
+import com.reviewplatform.exception.ResourceNotFoundException;
+import com.reviewplatform.model.Category;
+import com.reviewplatform.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class CategoryService {
+
+    private final CategoryRepository categoryRepository;
+
+    @Transactional(readOnly = true)
+    public List<Category> getAllCategories() {
+        return categoryRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Category getCategoryById(Long id) {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public Category getCategoryByName(String name) {
+        return categoryRepository.findByName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with name: " + name));
+    }
+
+    @Transactional
+    public Category createCategory(CategoryRequest request) {
+        if (categoryRepository.existsByName(request.getName())) {
+            throw new ResourceAlreadyExistsException("Category already exists with name: " + request.getName());
+        }
+
+        Category category = new Category();
+        category.setName(request.getName());
+        category.setDescription(request.getDescription());
+        category.setIcon(request.getIcon());
+
+        return categoryRepository.save(category);
+    }
+
+    // Change parameter from CategoryDto to CategoryRequest
+    @Transactional
+    public Category updateCategory(Long categoryId, CategoryRequest request) {
+        Category category = getCategoryById(categoryId);
+
+        if (request.getName() != null && !category.getName().equals(request.getName())) {
+            if (categoryRepository.existsByName(request.getName())) {
+                throw new ResourceAlreadyExistsException("Category already exists with name: " + request.getName());
+            }
+            category.setName(request.getName());
+        }
+
+        if (request.getDescription() != null) {
+            category.setDescription(request.getDescription());
+        }
+
+        if (request.getIcon() != null) {
+            category.setIcon(request.getIcon());
+        }
+
+        return categoryRepository.save(category);
+    }
+
+    @Transactional
+    public void deleteCategory(Long categoryId) {
+        if (!categoryRepository.existsById(categoryId)) {
+            throw new ResourceNotFoundException("Category not found with id: " + categoryId);
+        }
+        categoryRepository.deleteById(categoryId);
+    }
+}
